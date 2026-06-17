@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shell Command Studio</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #050816;
+      --panel: rgba(15, 23, 42, 0.78);
+      --border: rgba(148, 163, 184, 0.18);
+      --accent: #38bdf8;
+      --accent-2: #8b5cf6;
+      --bash: #4ade80;
+      --ps: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 34%),
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.14), transparent 32%),
+        linear-gradient(135deg, #020617 0%, #0f172a 55%, #020617 100%);
+      color: #e5e7eb;
+      min-height: 100vh;
+    }
+
+    .code-font { font-family: 'Fira Code', monospace; }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+    }
+
+    .tab-btn {
+      transition: all .25s ease;
+    }
+    .tab-btn.active {
+      border-bottom: 2px solid var(--accent);
+      color: #f8fafc;
+    }
+    .tab-btn.active-bash { border-bottom-color: var(--bash); }
+    .tab-btn.active-ps { border-bottom-color: var(--ps); }
+
+    .cat-btn {
+      transition: all .2s ease;
+    }
+    .cat-btn:hover {
+      background: rgba(30, 41, 59, 0.9);
+    }
+    .cat-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(139, 92, 246, 0.16));
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .cmd-card {
+      transition: all .2s ease;
+    }
+    .cmd-card:hover {
+      transform: translateY(-1px);
+      background: rgba(30, 41, 59, 0.9);
+    }
+
+    .input-search {
+      background: rgba(15, 23, 42, .88);
+      border: 1px solid rgba(148, 163, 184, .22);
+      color: #f8fafc;
+      transition: all .2s ease;
+    }
+    .input-search:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, .9);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, .12);
+    }
+
+    .toast {
+      transform: translateY(120px);
+      opacity: 0;
+      transition: all .3s ease;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .custom-scroll::-webkit-scrollbar { width: 7px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #020617; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+
+    .badge {
+      background: rgba(56, 189, 248, .12);
+      border: 1px solid rgba(56, 189, 248, .24);
+      color: #bae6fd;
+    }
+    .badge-bash {
+      background: rgba(74, 222, 128, .12);
+      border: 1px solid rgba(74, 222, 128, .24);
+      color: #86efac;
+    }
+    .badge-ps {
+      background: rgba(96, 165, 250, .12);
+      border: 1px solid rgba(96, 165, 250, .24);
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <main class="max-w-7xl mx-auto px-4 py-6 md:py-10">
+
+    <header class="mb-8">
+      <div class="glass rounded-3xl p-6 md:p-8">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div>
+            <p class="text-emerald-400 font-semibold mb-2">
+              <i class="fa-solid fa-terminal mr-2"></i>Shell Command Studio
+            </p>
+            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
+              Guia de comandes Bash i PowerShell
+            </h1>
+            <p class="text-slate-400 mt-3 max-w-2xl">
+              Consulta, busca i copia comandes essencials de Bash i PowerShell. Organitzades per categories amb exemples pràctics.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="badge-bash px-3 py-2 rounded-full text-sm"><i class="fa-brands fa-linux mr-1"></i>Bash</span>
+            <span class="badge-ps px-3 py-2 rounded-full text-sm"><i class="fa-brands fa-windows mr-1"></i>PowerShell</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+      <aside class="xl:col-span-3 space-y-6">
+        <div class="glass rounded-3xl p-5">
+          <h2 class="text-lg font-bold mb-4">
+            <i class="fa-solid fa-code text-emerald-400 mr-2"></i>Shell
+          </h2>
+          <div id="shellSelector" class="space-y-3">
+            <button class="tab-btn active active-bash w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-700 text-left" data-shell="bash">
+              <i class="fa-brands fa-linux text-emerald-400 text-xl"></i>
+              <div>
+                <p class="font-semibold">Bash</p>
+                <p class="text-xs text-slate-400">Linux / macOS</p>
+              </div>
+            </button>
+            <button class="tab-btn w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-700 text-left" data-shell="powershell">
+              <i class="fa-brands fa-windows text-blue-400 text-xl"></i>
+              <div>
+                <p class="font-semibold">PowerShell</p>
+                <p class="text-xs text-slate-400">Windows</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-5">
+          <h2 class="text-lg font-bold mb-4">
+            <i class="fa-solid fa-folder-tree text-sky-400 mr-2"></i>Categories
+          </h2>
+          <div id="categoriesList" class="space-y-2"></div>
+        </div>
+      </aside>
+
+      <section class="xl:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-5 md:p-6">
+          <h2 class="text-lg font-bold mb-4">
+            <i class="fa-solid fa-magnifying-glass text-sky-400 mr-2"></i>Cercar comandes
+          </h2>
+          <input id="searchInput" type="text" placeholder="Cerca per nom, categoria o exemple..." class="input-search w-full rounded-xl p-3 text-sm code-font">
+
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button onclick="filterCategory('all')" class="cat-btn active px-3 py-2 rounded-xl text-sm border border-slate-700" data-cat="all">Totes</button>
+          </div>
+        </div>
+
+        <div id="commandsContainer" class="space-y-3"></div>
+      </section>
+
+      <section class="xl:col-span-4 space-y-6">
+        <div class="glass rounded-3xl overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/60">
+            <div class="flex items-center gap-2">
+              <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span>
+              <span class="inline-block w-3 h-3 rounded-full bg-yellow-400"></span>
+              <span class="inline-block w-3 h-3 rounded-full bg-green-500"></span>
+              <span class="ml-3 text-sm text-slate-400 code-font">terminal</span>
+            </div>
+            <button onclick="copyCommand()" class="px-3 py-2 rounded-xl text-sm bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition">
+              <i class="fa-regular fa-copy mr-1"></i> Copiar
+            </button>
+          </div>
+          <div class="p-5 min-h-[300px] max-h-[500px] overflow-auto custom-scroll" style="background: #020617;">
+            <pre id="outputCode" class="code-font text-emerald-300 text-sm whitespace-pre-wrap leading-relaxed">Selecciona una comanda per veure-la aquí.</pre>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-5">
+          <h2 class="text-lg font-bold mb-3">
+            <i class="fa-solid fa-circle-info text-sky-400 mr-2"></i>Info
+          </h2>
+          <p id="helperText" class="text-sm text-slate-400 leading-relaxed">
+            Fes clic a qualsevol comanda per veure'n l'exemple complet.
+          </p>
+        </div>
+      </section>
+    </section>
+
+    <footer class="text-center text-slate-500 text-sm mt-10">
+      Desenvolupat per Sergi Gallart &middot; Shell Command Studio
+    </footer>
+  </main>
+
+  <div id="toast" class="toast fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastText">Copiat al portapapers</span>
+  </div>
+
+  <script>
+    const commands = {
+      bash: [
+        { cmd: 'ls', cat: 'files', desc: 'Llista fitxers i directoris', example: 'ls -la /home/user' },
+        { cmd: 'cd', cat: 'files', desc: 'Canvia de directori', example: 'cd /var/log' },
+        { cmd: 'pwd', cat: 'files', desc: 'Mostra el directori actual', example: 'pwd' },
+        { cmd: 'cp', cat: 'files', desc: 'Copia fitxers o directoris', example: 'cp -r /origen /desti' },
+        { cmd: 'mv', cat: 'files', desc: 'Mou o renombra fitxers', example: 'mv fitxer.txt /nou/lloc/' },
+        { cmd: 'rm', cat: 'files', desc: 'Elimina fitxers', example: 'rm -rf /tmp/cache' },
+        { cmd: 'mkdir', cat: 'files', desc: 'Crea un directori', example: 'mkdir -p projecte/src' },
+        { cmd: 'touch', cat: 'files', desc: 'Crea un fitxer buit', example: 'touch README.md' },
+        { cmd: 'chmod', cat: 'perms', desc: 'Canvia permisos', example: 'chmod 755 script.sh' },
+        { cmd: 'chown', cat: 'perms', desc: 'Canvia propietari', example: 'chown user:group fitxer.txt' },
+        { cmd: 'ps', cat: 'procs', desc: 'Llista processos', example: 'ps aux --sort=-%mem' },
+        { cmd: 'top', cat: 'procs', desc: 'Monitoritza processos en temps real', example: 'top -u $USER' },
+        { cmd: 'kill', cat: 'procs', desc: 'Mata un procés per PID', example: 'kill -9 1234' },
+        { cmd: 'killall', cat: 'procs', desc: 'Mata processos per nom', example: 'killall -15 nginx' },
+        { cmd: 'grep', cat: 'text', desc: 'Cerca text en fitxers', example: 'grep -rn "error" /var/log/' },
+        { cmd: 'find', cat: 'files', desc: 'Cerca fitxers', example: 'find /etc -name "*.conf"' },
+        { cmd: 'cat', cat: 'text', desc: 'Mostra el contingut d\'un fitxer', example: 'cat /etc/passwd' },
+        { cmd: 'head', cat: 'text', desc: 'Primeres línies d\'un fitxer', example: 'head -n 20 fitxer.log' },
+        { cmd: 'tail', cat: 'text', desc: 'Últimes línies d\'un fitxer', example: 'tail -f /var/log/syslog' },
+        { cmd: 'wc', cat: 'text', desc: 'Compta línies, paraules i caràcters', example: 'wc -l fitxer.txt' },
+        { cmd: 'sort', cat: 'text', desc: 'Ordena línies', example: 'sort -u llista.txt' },
+        { cmd: 'uniq', cat: 'text', desc: 'Elimina línies duplicades', example: 'sort llista.txt | uniq -c' },
+        { cmd: 'sed', cat: 'text', desc: 'Editor de flux per transformar text', example: 'sed -i "s/foo/bar/g" fitxer.txt' },
+        { cmd: 'awk', cat: 'text', desc: 'Processa i analitza text per columnes', example: 'awk \'{print $1, $3}\' fitxer.txt' },
+        { cmd: 'df', cat: 'disk', desc: 'Espai en disc de sistemes de fitxers', example: 'df -h' },
+        { cmd: 'du', cat: 'disk', desc: 'Ús de disc de directoris', example: 'du -sh /home/user' },
+        { cmd: 'mount', cat: 'disk', desc: 'Munta un dispositiu', example: 'mount /dev/sdb1 /mnt' },
+        { cmd: 'ping', cat: 'net', desc: 'Comprova connectivitat de xarxa', example: 'ping -c 4 google.com' },
+        { cmd: 'curl', cat: 'net', desc: 'Transferència de dades amb URL', example: 'curl -I https://example.com' },
+        { cmd: 'wget', cat: 'net', desc: 'Descarrega fitxers d\'Internet', example: 'wget https://example.com/fitxer.zip' },
+        { cmd: 'ssh', cat: 'net', desc: 'Connexió remota segura', example: 'ssh -i clau.pem user@192.168.1.1' },
+        { cmd: 'scp', cat: 'net', desc: 'Còpia segura entre màquines', example: 'scp fitxer.txt user@host:/desti/' },
+        { cmd: 'rsync', cat: 'net', desc: 'Sincronització de fitxers', example: 'rsync -avz /origen/ user@host:/desti/' },
+        { cmd: 'netstat', cat: 'net', desc: 'Estadístiques de xarxa', example: 'netstat -tulpn' },
+        { cmd: 'ss', cat: 'net', desc: 'Estadístiques de sockets', example: 'ss -tuln' },
+        { cmd: 'iptables', cat: 'net', desc: 'Configuració del firewall', example: 'iptables -A INPUT -p tcp --dport 22 -j ACCEPT' },
+        { cmd: 'uname', cat: 'sys', desc: 'Informació del sistema', example: 'uname -a' },
+        { cmd: 'lscpu', cat: 'sys', desc: 'Informació de la CPU', example: 'lscpu' },
+        { cmd: 'free', cat: 'sys', desc: 'Memòria lliure i utilitzada', example: 'free -h' },
+        { cmd: 'uptime', cat: 'sys', desc: 'Temps actiu del sistema', example: 'uptime' },
+        { cmd: 'dmesg', cat: 'sys', desc: 'Missatges del kernel', example: 'dmesg | tail -n 30' },
+        { cmd: 'systemctl', cat: 'svc', desc: 'Gestiona serveis systemd', example: 'systemctl restart nginx' },
+        { cmd: 'journalctl', cat: 'svc', desc: 'Consulta els logs de systemd', example: 'journalctl -u nginx --no-pager' },
+        { cmd: 'tar', cat: 'pkg', desc: 'Comprimeix i arxiva fitxers', example: 'tar -czvf backup.tar.gz /dades' },
+        { cmd: 'gzip', cat: 'pkg', desc: 'Comprimeix fitxers', example: 'gzip fitxer.log' },
+        { cmd: 'apt', cat: 'pkg', desc: 'Gestor de paquets Debian/Ubuntu', example: 'apt update && apt upgrade -y' },
+        { cmd: 'yum', cat: 'pkg', desc: 'Gestor de paquets RHEL/CentOS', example: 'yum install nginx -y' },
+        { cmd: 'dpkg', cat: 'pkg', desc: 'Gestor de paquets Debian baix nivell', example: 'dpkg -i paquet.deb' },
+        { cmd: 'history', cat: 'sys', desc: 'Historial de comandes', example: 'history | grep ssh' },
+        { cmd: 'alias', cat: 'sys', desc: 'Crea àlies de comandes', example: 'alias ll="ls -la"' },
+        { cmd: 'env', cat: 'sys', desc: 'Variables d\'entorn', example: 'env | grep PATH' },
+        { cmd: 'crontab', cat: 'sys', desc: 'Programa tasques periòdiques', example: 'crontab -e' },
+        { cmd: 'nano', cat: 'files', desc: 'Editor de text en terminal', example: 'nano /etc/nginx/nginx.conf' },
+        { cmd: 'diff', cat: 'text', desc: 'Compara fitxers línia per línia', example: 'diff fitxer1.txt fitxer2.txt' },
+        { cmd: 'tee', cat: 'text', desc: 'Mostra i escriu sortida a fitxer', example: 'echo "hola" | tee sortida.txt' },
+        { cmd: 'xargs', cat: 'text', desc: 'Construeix i executa comandes', example: 'find . -name "*.tmp" | xargs rm' },
+        { cmd: 'lsof', cat: 'procs', desc: 'Fitxers oberts per processos', example: 'lsof -i :80' },
+        { cmd: 'ip', cat: 'net', desc: 'Configuració de xarxa moderna', example: 'ip addr show' },
+        { cmd: 'traceroute', cat: 'net', desc: 'Traça la ruta a un host', example: 'traceroute google.com' },
+        { cmd: 'nslookup', cat: 'net', desc: 'Consulta DNS', example: 'nslookup example.com' },
+      ],
+      powershell: [
+        { cmd: 'Get-ChildItem', cat: 'files', desc: 'Llista fitxers i directoris', example: 'Get-ChildItem -Path C:\\Users -Recurse' },
+        { cmd: 'Set-Location', cat: 'files', desc: 'Canvia de directori', example: 'Set-Location -Path C:\\Windows\\System32' },
+        { cmd: 'Copy-Item', cat: 'files', desc: 'Copia fitxers o directoris', example: 'Copy-Item -Path C:\\origen\\* -Destination D:\\desti -Recurse' },
+        { cmd: 'Move-Item', cat: 'files', desc: 'Mou o renombra fitxers', example: 'Move-Item -Path C:\\vells\\fitxer.txt -Destination C:\\nou\\' },
+        { cmd: 'Remove-Item', cat: 'files', desc: 'Elimina fitxers', example: 'Remove-Item -Path C:\\temp\\* -Recurse -Force' },
+        { cmd: 'New-Item', cat: 'files', desc: 'Crea fitxer o directori', example: 'New-Item -Path C:\\projecte\\src -ItemType Directory' },
+        { cmd: 'Get-Content', cat: 'text', desc: 'Mostra contingut d\'un fitxer', example: 'Get-Content -Path C:\\logs\\error.log -Tail 50' },
+        { cmd: 'Select-String', cat: 'text', desc: 'Cerca text en fitxers', example: 'Select-String -Path C:\\logs\\*.log -Pattern "ERROR"' },
+        { cmd: 'Out-File', cat: 'text', desc: 'Escriu sortida a un fitxer', example: 'Get-Process | Out-File -FilePath C:\\processos.txt' },
+        { cmd: 'Get-Process', cat: 'procs', desc: 'Llista processos en execució', example: 'Get-Process -Name "chrome" | Sort-Object CPU -Descending' },
+        { cmd: 'Stop-Process', cat: 'procs', desc: 'Atura un procés', example: 'Stop-Process -Name "notepad" -Force' },
+        { cmd: 'Get-Service', cat: 'svc', desc: 'Llista serveis del sistema', example: 'Get-Service | Where-Object { $_.Status -eq "Running" }' },
+        { cmd: 'Restart-Service', cat: 'svc', desc: 'Reinicia un servei', example: 'Restart-Service -Name "Spooler"' },
+        { cmd: 'Get-EventLog', cat: 'sys', desc: 'Consulta logs del sistema', example: 'Get-EventLog -LogName System -Newest 20' },
+        { cmd: 'Get-WmiObject', cat: 'sys', desc: 'Informació de sistema amb WMI', example: 'Get-WmiObject Win32_Processor' },
+        { cmd: 'Get-CimInstance', cat: 'sys', desc: 'Informació de sistema amb CIM', example: 'Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"' },
+        { cmd: 'Invoke-Command', cat: 'net', desc: 'Executa comandes en remot', example: 'Invoke-Command -ComputerName SRV01 -ScriptBlock { Get-Service }' },
+        { cmd: 'Enter-PSSession', cat: 'net', desc: 'Sessió remota interactiva', example: 'Enter-PSSession -ComputerName SRV01' },
+        { cmd: 'Test-Connection', cat: 'net', desc: 'Comprova connectivitat', example: 'Test-Connection -ComputerName google.com -Count 4' },
+        { cmd: 'Invoke-WebRequest', cat: 'net', desc: 'Petició HTTP', example: 'Invoke-WebRequest -Uri https://api.example.com -Method GET' },
+        { cmd: 'Get-NetIPAddress', cat: 'net', desc: 'Adreces IP del sistema', example: 'Get-NetIPAddress | Where-Object AddressFamily -eq IPv4' },
+        { cmd: 'Get-NetAdapter', cat: 'net', desc: 'Adaptadors de xarxa', example: 'Get-NetAdapter | Select-Object Name, Status, LinkSpeed' },
+        { cmd: 'New-NetFirewallRule', cat: 'net', desc: 'Crea regla de firewall', example: 'New-NetFirewallRule -DisplayName "Allow SSH" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow' },
+        { cmd: 'Get-Command', cat: 'sys', desc: 'Llista comandes disponibles', example: 'Get-Command -Module ActiveDirectory' },
+        { cmd: 'Get-Help', cat: 'sys', desc: 'Ajuda d\'un cmdlet', example: 'Get-Help Get-Process -Examples' },
+        { cmd: 'Get-Member', cat: 'sys', desc: 'Propietats i mètodes d\'un objecte', example: 'Get-Process | Get-Member' },
+        { cmd: 'Where-Object', cat: 'text', desc: 'Filtra objectes per condició', example: 'Get-Service | Where-Object { $_.Status -eq "Stopped" }' },
+        { cmd: 'Select-Object', cat: 'text', desc: 'Selecciona propietats', example: 'Get-Process | Select-Object Name, CPU, WorkingSet -First 10' },
+        { cmd: 'Sort-Object', cat: 'text', desc: 'Ordena objectes', example: 'Get-ChildItem C:\\Windows -Recurse -ErrorAction SilentlyContinue | Sort-Object Length -Descending | Select -First 20' },
+        { cmd: 'Group-Object', cat: 'text', desc: 'Agrupa objectes', example: 'Get-Service | Group-Object Status' },
+        { cmd: 'Measure-Object', cat: 'text', desc: 'Calcula estadístiques', example: 'Get-Process | Measure-Object WorkingSet -Average -Max -Min' },
+        { cmd: 'ForEach-Object', cat: 'text', desc: 'Itera sobre objectes', example: 'Get-Service | ForEach-Object { $_.Name + " -> " + $_.Status }' },
+        { cmd: 'Get-Date', cat: 'sys', desc: 'Data i hora actual', example: 'Get-Date -Format "yyyy-MM-dd HH:mm:ss"' },
+        { cmd: 'Set-ExecutionPolicy', cat: 'sys', desc: 'Política d\'execució de scripts', example: 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser' },
+        { cmd: 'Get-WinEvent', cat: 'sys', desc: 'Consulta logs avançats', example: 'Get-WinEvent -LogName Security -MaxEvents 50' },
+        { cmd: 'ConvertTo-Json', cat: 'text', desc: 'Converteix objecte a JSON', example: 'Get-Process | Select Name, CPU | ConvertTo-Json' },
+        { cmd: 'Export-Csv', cat: 'text', desc: 'Exporta a CSV', example: 'Get-Service | Export-Csv -Path C:\\serveis.csv -NoTypeInformation' },
+        { cmd: 'Import-Csv', cat: 'text', desc: 'Importa des de CSV', example: 'Import-Csv -Path C:\\usuaris.csv | Where-Object Role -eq "Admin"' },
+        { cmd: 'Add-Content', cat: 'files', desc: 'Afegeix contingut a un fitxer', example: 'Add-Content -Path C:\\log.txt -Value "Nova entrada"' },
+        { cmd: 'Clear-Host', cat: 'sys', desc: 'Neteja la pantalla', example: 'Clear-Host' },
+        { cmd: 'Get-Item', cat: 'files', desc: 'Obté un element', example: 'Get-Item -Path C:\\Windows\\System32\\drivers\\etc\\hosts' },
+        { cmd: 'Get-ItemProperty', cat: 'files', desc: 'Propietats d\'un element', example: 'Get-ItemProperty -Path C:\\Windows' },
+        { cmd: 'Get-ChildItem', cat: 'files', desc: 'Llista fitxers (alias: ls, dir)', example: 'dir C:\\Users\\*.txt -Recurse | Select FullName, Length' },
+        { cmd: 'Get-Acl', cat: 'perms', desc: 'Permisos d\'un fitxer', example: 'Get-Acl -Path C:\\scripts\\deploy.ps1 | Format-List' },
+        { cmd: 'Set-Acl', cat: 'perms', desc: 'Modifica permisos', example: 'Set-Acl -Path C:\\compartit -AclObject $acl' },
+        { cmd: 'Compress-Archive', cat: 'pkg', desc: 'Comprimeix en ZIP', example: 'Compress-Archive -Path C:\\dades\\* -DestinationPath C:\\backup.zip' },
+        { cmd: 'Expand-Archive', cat: 'pkg', desc: 'Descomprimeix ZIP', example: 'Expand-Archive -Path C:\\backup.zip -DestinationPath C:\\restaurat' },
+        { cmd: 'Get-Variable', cat: 'sys', desc: 'Variables de PowerShell', example: 'Get-Variable | Where-Object { $_.Name -like "*PATH*" }' },
+        { cmd: 'Write-Host', cat: 'sys', desc: 'Mostra text per pantalla', example: 'Write-Host "Hola, món!" -ForegroundColor Green' },
+        { cmd: 'Read-Host', cat: 'sys', desc: 'Entrada de l\'usuari', example: '$nom = Read-Host "Introdueix el teu nom"' },
+        { cmd: 'Start-Transcript', cat: 'sys', desc: 'Enregistra la sessió', example: 'Start-Transcript -Path C:\\sessio.log' },
+        { cmd: 'Stop-Transcript', cat: 'sys', desc: 'Atura l\'enregistrament', example: 'Stop-Transcript' },
+        { cmd: 'Get-Volume', cat: 'disk', desc: 'Volums de disc', example: 'Get-Volume | Where-Object DriveType -eq "Fixed"' },
+      ]
+    };
+
+    const catLabels = {
+      all: 'Totes',
+      files: 'Fitxers i directoris',
+      text: 'Processament de text',
+      procs: 'Processos',
+      net: 'Xarxa',
+      sys: 'Sistema',
+      perms: 'Permisos',
+      disk: 'Disc',
+      svc: 'Serveis',
+      pkg: 'Paquets i compressió'
+    };
+
+    const catLabelsEn = {
+      all: 'All',
+      files: 'Files & directories',
+      text: 'Text processing',
+      procs: 'Processes',
+      net: 'Network',
+      sys: 'System',
+      perms: 'Permissions',
+      disk: 'Disk',
+      svc: 'Services',
+      pkg: 'Packages & compression'
+    };
+
+    const catIcons = {
+      files: 'fa-folder-open',
+      text: 'fa-file-lines',
+      procs: 'fa-microchip',
+      net: 'fa-network-wired',
+      sys: 'fa-gear',
+      perms: 'fa-shield',
+      disk: 'fa-hard-drive',
+      svc: 'fa-sliders',
+      pkg: 'fa-box'
+    };
+
+    let currentShell = 'bash';
+    let selectedCommand = null;
+    let currentCategory = 'all';
+    let currentLang = 'ca';
+
+    function init() {
+      document.querySelectorAll('[data-shell]').forEach(btn => {
+        btn.addEventListener('click', () => setShell(btn.dataset.shell));
+      });
+
+      document.getElementById('searchInput').addEventListener('input', renderCommands);
+
+      setShell('bash');
+    }
+
+    function setShell(shell) {
+      currentShell = shell;
+
+      document.querySelectorAll('[data-shell]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.shell === shell);
+        const isBash = shell === 'bash';
+        btn.className = btn.className.replace(/active-bash|active-ps/g, '');
+        if (btn.dataset.shell === shell) {
+          btn.classList.add(isBash ? 'active-bash' : 'active-ps');
+        }
+      });
+
+      renderCategories();
+      renderCommands();
+      document.getElementById('helperText').textContent =
+        shell === 'bash'
+          ? 'Fes clic a qualsevol comanda Bash per veure l\'exemple complet.'
+          : 'Fes clic a qualsevol comanda PowerShell per veure l\'exemple complet.';
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categoriesList');
+      const cmds = commands[currentShell];
+      const cats = [...new Set(cmds.map(c => c.cat))];
+
+      const labels = currentLang === 'ca' ? catLabels : catLabelsEn;
+
+      container.innerHTML = `
+        <button onclick="filterCategory('all')" class="cat-btn active w-full text-left p-3 rounded-xl border border-slate-700 text-sm flex items-center gap-3" data-cat="all">
+          <i class="fa-solid ${catIcons.files} text-sky-400 w-4"></i>
+          ${labels.all} (${cmds.length})
+        </button>
+      `;
+
+      cats.forEach(cat => {
+        const count = cmds.filter(c => c.cat === cat).length;
+        container.innerHTML += `
+          <button onclick="filterCategory('${cat}')" class="cat-btn w-full text-left p-3 rounded-xl border border-slate-700 text-sm flex items-center gap-3" data-cat="${cat}">
+            <i class="fa-solid ${catIcons[cat] || 'fa-tag'} text-sky-400 w-4"></i>
+            ${labels[cat]} (${count})
+          </button>
+        `;
+      });
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cat === cat);
+      });
+      renderCommands();
+    }
+
+    function renderCommands() {
+      const container = document.getElementById('commandsContainer');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+
+      let cmds = commands[currentShell];
+      if (currentCategory !== 'all') {
+        cmds = cmds.filter(c => c.cat === currentCategory);
+      }
+      if (search) {
+        cmds = cmds.filter(c =>
+          c.cmd.toLowerCase().includes(search) ||
+          c.desc.toLowerCase().includes(search) ||
+          c.cat.toLowerCase().includes(search)
+        );
+      }
+
+      if (cmds.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 text-sm p-4">No s'han trobat comandes.</p>`;
+        return;
+      }
+
+      container.innerHTML = cmds.map(c => `
+        <div onclick="selectCommand('${c.cmd}')" class="cmd-card glass rounded-2xl p-4 cursor-pointer">
+          <div class="flex items-center justify-between mb-1">
+            <span class="code-font text-sm font-semibold text-sky-300">${c.cmd}</span>
+            <span class="text-xs text-slate-500">${catLabels[c.cat] || c.cat}</span>
+          </div>
+          <p class="text-xs text-slate-400">${c.desc}</p>
+          <p class="code-font text-xs text-slate-600 mt-1 truncate">${c.example}</p>
+        </div>
+      `).join('');
+    }
+
+    function selectCommand(cmdName) {
+      const cmd = commands[currentShell].find(c => c.cmd === cmdName);
+      if (!cmd) return;
+
+      selectedCommand = cmd;
+      const prefix = currentShell === 'bash' ? '$ ' : 'PS> ';
+      document.getElementById('outputCode').textContent = `${prefix}${cmd.example}`;
+      document.getElementById('helperText').innerHTML =
+        `<strong class="text-sky-300 code-font">${cmd.cmd}</strong><br><span class="text-slate-400">${cmd.desc}</span>`;
+    }
+
+    function copyCommand() {
+      const code = document.getElementById('outputCode').textContent;
+      if (!code || code === 'Selecciona una comanda per veure-la aquí.') return;
+
+      const clean = code.replace(/^(PS> |\$ )/, '');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(clean);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = clean;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+
+      showToast('Comanda copiada al portapapers');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastText').textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
